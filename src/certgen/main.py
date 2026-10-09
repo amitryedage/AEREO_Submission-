@@ -4,9 +4,16 @@ from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
+from fastapi.exceptions import RequestValidationError
 
 from certgen.api.health import router as health_router
 from certgen.db import init_db
+from certgen.errors import (
+    AppError,
+    app_error_handler,
+    unhandled_exception_handler,
+    validation_error_handler,
+)
 
 
 @asynccontextmanager
@@ -27,6 +34,14 @@ def create_app() -> FastAPI:
         redoc_url="/redoc",
         lifespan=lifespan,
     )
+
+    # Register error handlers
+    application.add_exception_handler(AppError, app_error_handler)  # type: ignore[arg-type]
+    application.add_exception_handler(
+        RequestValidationError,
+        validation_error_handler,  # type: ignore[arg-type]
+    )
+    application.add_exception_handler(Exception, unhandled_exception_handler)
 
     # Register routers
     application.include_router(health_router)
