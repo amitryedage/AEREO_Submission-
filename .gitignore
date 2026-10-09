@@ -10,3 +10,11 @@ htmlcov/
 /storage/
 *.db
 sample_certificate.pdf
+
+# Test files
+tests/
+test_*.py
+
+# Documentation & PRD
+PRD_Bulk_Certificate_Generator.md
+README.md
