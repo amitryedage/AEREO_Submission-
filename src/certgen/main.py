@@ -3,9 +3,11 @@
 import logging
 from collections.abc import AsyncGenerator
 from contextlib import asynccontextmanager
+from pathlib import Path
 
 from fastapi import FastAPI
 from fastapi.exceptions import RequestValidationError
+from fastapi.staticfiles import StaticFiles
 
 from certgen.api.certificates import router as certificates_router
 from certgen.api.deps import get_renderer, get_storage
@@ -89,6 +91,11 @@ def create_app() -> FastAPI:
     application.include_router(health_router)
     application.include_router(jobs_router)
     application.include_router(certificates_router)
+
+    # Mount static assets directory for web UI
+    static_dir = Path(__file__).resolve().parent / "static"
+    if static_dir.exists():
+        application.mount("/", StaticFiles(directory=str(static_dir), html=True), name="static")
 
     return application
 
