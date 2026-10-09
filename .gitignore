@@ -11,9 +11,11 @@ htmlcov/
 *.db
 sample_certificate.pdf
 
-# Test files
+# Test & verification files
 tests/
 test_*.py
+*_test.py
+scripts/
 
 # Documentation & PRD
 PRD_Bulk_Certificate_Generator.md
