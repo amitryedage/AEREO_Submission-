@@ -1,12 +1,12 @@
-"""Jobs API endpoints: creation, progress tracking, and certificate listing."""
+"""Jobs API endpoints: creation, listing, progress tracking, retry, and certificate listing."""
 
 from fastapi import APIRouter, BackgroundTasks, Depends, Header, Query, Response, status
 from fastapi.responses import StreamingResponse
 from sqlalchemy.orm import Session, sessionmaker
 
 from certgen.api.deps import get_db, get_renderer, get_session_factory, get_storage
-from certgen.errors import NotFoundError
-from certgen.models import Certificate, CertificateStatus, Job
+from certgen.errors import ConflictError, NotFoundError
+from certgen.models import Certificate, CertificateStatus, ErrorStage, Job, JobStatus
 from certgen.rendering.base import CertificateRenderer
 from certgen.schemas import (
     CertificateErrorOut,
@@ -17,6 +17,7 @@ from certgen.schemas import (
     JobAcceptedOut,
     JobCreateIn,
     JobDetailOut,
+    JobListOut,
 )
 from certgen.services.archive import generate_job_archive
 from certgen.services.job_service import JobService, build_job_links
@@ -60,6 +61,55 @@ def create_job(
         background_tasks.add_task(processor.run, job.id)
 
     return accepted_out
+
+
+@router.get(
+    "",
+    response_model=JobListOut,
+    summary="List recent certificate generation jobs",
+)
+def list_jobs(
+    page: int = Query(1, ge=1),
+    page_size: int = Query(20, ge=1, le=100),
+    session: Session = Depends(get_db),
+) -> JobListOut:
+    """Retrieve paginated recent jobs ordered by creation date descending."""
+    query = session.query(Job).order_by(Job.created_at.desc())
+    total_items = query.count()
+    jobs = query.offset((page - 1) * page_size).limit(page_size).all()
+
+    items: list[JobDetailOut] = []
+    for job in jobs:
+        progress = JobService.calculate_progress(session, job.id, job.total_count)
+        cert_info = CertificateInfoIn(
+            title=job.title,
+            course_name=job.course_name,
+            issuer_name=job.issuer_name,
+            issue_date=job.issue_date,
+            signatory_name=job.signatory_name,
+            signatory_title=job.signatory_title,
+        )
+        items.append(
+            JobDetailOut(
+                id=job.id,
+                status=job.status,
+                certificate=cert_info,
+                created_at=job.created_at,
+                started_at=job.started_at,
+                completed_at=job.completed_at,
+                progress=progress,
+                failures=[],
+                failures_truncated=False,
+                links=build_job_links(job.id),
+            )
+        )
+
+    return JobListOut(
+        page=page,
+        page_size=page_size,
+        total_items=total_items,
+        items=items,
+    )
 
 
 @router.get(
@@ -118,6 +168,73 @@ def get_job(job_id: str, session: Session = Depends(get_db)) -> JobDetailOut:
         progress=progress,
         failures=failures_preview,
         failures_truncated=total_failures > 20,
+        links=build_job_links(job.id),
+    )
+
+
+@router.post(
+    "/{job_id}/retry",
+    response_model=JobAcceptedOut,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Retry failed certificate generation tasks",
+)
+def retry_job(
+    job_id: str,
+    response: Response,
+    background_tasks: BackgroundTasks,
+    session: Session = Depends(get_db),
+    session_factory: sessionmaker[Session] = Depends(get_session_factory),
+    renderer: CertificateRenderer = Depends(get_renderer),
+    storage: FileStorage = Depends(get_storage),
+) -> JobAcceptedOut:
+    """Re-queue generation failures for a job."""
+    job = session.query(Job).filter(Job.id == job_id).first()
+    if not job:
+        raise NotFoundError("JOB_NOT_FOUND", f"Job '{job_id}' not found")
+
+    # Only generation failures can be retried (validation failures have invalid input data)
+    generation_failures = (
+        session.query(Certificate)
+        .filter(
+            Certificate.job_id == job_id,
+            Certificate.status == CertificateStatus.FAILED.value,
+            Certificate.error_stage == ErrorStage.GENERATION.value,
+        )
+        .all()
+    )
+
+    if not generation_failures:
+        raise ConflictError(
+            "NO_RETRIABLE_ITEMS",
+            "No generation failures available to retry in this job "
+            "(validation errors cannot be retried).",
+        )
+
+    for cert in generation_failures:
+        cert.status = CertificateStatus.PENDING.value
+        cert.error_stage = None
+        cert.error_code = None
+        cert.error_message = None
+
+    job.status = JobStatus.QUEUED.value
+    job.completed_at = None
+    session.commit()
+
+    response.headers["Location"] = f"/api/v1/jobs/{job.id}"
+
+    processor = JobProcessor(
+        session_factory=session_factory,
+        renderer=renderer,
+        storage=storage,
+    )
+    background_tasks.add_task(processor.run, job.id)
+
+    progress = JobService.calculate_progress(session, job.id, job.total_count)
+    return JobAcceptedOut(
+        id=job.id,
+        status=job.status,
+        created_at=job.created_at,
+        progress=progress,
         links=build_job_links(job.id),
     )
 

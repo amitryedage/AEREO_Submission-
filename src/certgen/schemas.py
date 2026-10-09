@@ -128,6 +128,15 @@ class JobDetailOut(BaseModel):
     links: JobLinksOut
 
 
+class JobListOut(BaseModel):
+    """Paginated list of bulk generation jobs."""
+
+    page: int
+    page_size: int
+    total_items: int
+    items: list[JobDetailOut]
+
+
 class CertificateErrorOut(BaseModel):
     """Structured error payload for failed certificates."""
 
