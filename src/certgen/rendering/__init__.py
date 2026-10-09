@@ -1,0 +1,1 @@
+"""Certificate PDF rendering components."""
