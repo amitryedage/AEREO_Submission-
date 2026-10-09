@@ -34,16 +34,16 @@ Educational platforms, hackathons, and corporate training programs frequently ne
 
 ```mermaid
 flowchart TD
-    U[Client / Web UI / REST Caller] --> S1
-    S1[Stage 1 · Envelope Ingestion & Validation<br/>Pydantic v2 · Max batch cap · Immediate 422 on bad structure] --> S2
-    S2[Stage 2 · Semantic Two-Level Validation<br/>Name normalization · Email RFC-5322 · Case-insensitive dedup] --> S3
-    S3[Stage 3 · Relational State Ledger<br/>SQLAlchemy 2.0 · SQLite WAL · (job_id, sequence) keys] --> S4
-    S4[Stage 4 · Asynchronous Generation Worker<br/>Per-certificate transactional commits · Failure isolation] --> S5
-    S5[Stage 5 · Vector PDF Rendering Engine<br/>ReportLab A4 Landscape · DejaVu TTF · Font shrink-to-fit · Crockford ID] --> S6
-    S6[Stage 6 · Storage & Streaming Export<br/>Atomic .tmp rename · Spooled ZIP archive + manifest.csv]
+    U["Client / Web UI / REST Caller"] --> S1
+    S1["Stage 1 · Envelope Ingestion & Validation<br/>Pydantic v2 · Max batch cap · Immediate 422 on bad structure"] --> S2
+    S2["Stage 2 · Semantic Two-Level Validation<br/>Name normalization · Email RFC-5322 · Case-insensitive dedup"] --> S3
+    S3["Stage 3 · Relational State Ledger<br/>SQLAlchemy 2.0 · SQLite WAL · Composite sequence keys"] --> S4
+    S4["Stage 4 · Asynchronous Generation Worker<br/>Per-certificate transactional commits · Failure isolation"] --> S5
+    S5["Stage 5 · Vector PDF Rendering Engine<br/>ReportLab A4 Landscape · DejaVu TTF · Font shrink-to-fit · Crockford ID"] --> S6
+    S6["Stage 6 · Storage & Streaming Export<br/>Atomic .tmp rename · Spooled ZIP archive + manifest.csv"]
     
-    S6 --> UI[(Built-In Web UI Dashboard<br/>http://127.0.0.1:8000)]
-    S6 --> API[(REST Clients / curl / Webhooks)]
+    S6 --> UI["Built-In Web UI Dashboard<br/>http://127.0.0.1:8000"]
+    S6 --> API["REST Clients / curl / Webhooks"]
 ```
 
 ### Pipeline Stages
