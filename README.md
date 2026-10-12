@@ -346,27 +346,15 @@ d:\AEREO_Submission-\
 │   │   └── archive.py          # Spooled streaming ZIP archive generator with manifest
 │   ├── rendering/
 │   │   ├── base.py             # CertificateRenderer protocol & data transfer classes
-│   │   ├── pdf_renderer.py     # ReportLab A4 landscape renderer with shrink-to-fit
-│   │   └── assets/fonts/       # Bundled DejaVu Serif TTF fonts
-│   ├── storage/
-│   │   └── local.py            # LocalFileStorage with atomic replace & traversal guard
-│   └── static/
-│       ├── index.html          # Clean light-mode single-page application structure
-│       ├── styles.css          # Vanilla CSS light design system
-│       └── app.js              # Reactive JavaScript client & polling engine
-└── tests/
-    ├── conftest.py             # Shared fixtures & test database configuration
-    ├── test_health.py          # System health check tests
-    ├── test_models.py          # Database model and index integrity tests
-    ├── test_validation.py      # Envelope and recipient validation unit tests
-    ├── test_renderer.py        # ReportLab PDF vector rendering tests
-    ├── test_numbering.py       # Crockford Base32 uniqueness & randomness tests
-    ├── test_storage.py         # Atomic write and security traversal tests
-    ├── test_processor.py       # Background worker and failure isolation tests
-    ├── test_archive.py         # ZIP stream and manifest verification tests
-    ├── test_api_jobs.py        # Jobs API endpoint integration tests
-    ├── test_api_certificates.py# Certificate retrieval & download endpoint tests
-    └── test_retrieval.py       # End-to-end batch generation and retrieval tests
+    │   ├── pdf_renderer.py     # ReportLab A4 landscape renderer with shrink-to-fit
+    │   └── assets/fonts/       # Bundled DejaVu Serif TTF fonts
+    ├── storage/
+    │   └── local.py            # LocalFileStorage with atomic replace & traversal guard
+    └── static/
+        ├── index.html          # Clean light-mode single-page application structure
+        ├── styles.css          # Vanilla CSS light design system
+        └── app.js              # Reactive JavaScript client & polling engine
+
 ```
 
 ---
